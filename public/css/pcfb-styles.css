@@ -1,0 +1,75 @@
+/* کل کانتینر فرم ساز */
+.pcfb-builder {
+    display: flex;
+    gap: 20px;
+}
+
+/* ستون ابزارها */
+.pcfb-tools {
+    width: 30%;
+    background: #f1f1f1;
+    padding: 15px;
+    border-radius: 6px;
+}
+
+/* هر ابزار */
+.pcfb-tool {
+    background: #3498db;
+    color: white;
+    padding: 10px;
+    margin: 8px 0;
+    border-radius: 4px;
+    cursor: grab;
+    display: inline-block;
+}
+
+/* پیش‌نمایش فرم */
+.pcfb-preview {
+    flex: 1;
+    min-height: 300px;
+    border: 2px dashed #aaa;
+    padding: 15px;
+    border-radius: 6px;
+    background: #fff;
+}
+
+/* هر فیلد اضافه شده */
+.pcfb-field {
+    margin: 15px 0; /* فاصله عمودی بین فیلدها */
+    padding: 15px; /* فاصله داخلی */
+    border: 1px dashed #aaa;
+    border-radius: 6px;
+    background: #f9f9f9;
+    position: relative;
+}
+
+/* دکمه‌های داخل فیلد */
+.pcfb-field button {
+    margin-left: 5px; /* فاصله بین دکمه‌ها */
+}
+
+/* تنظیمات هر فیلد */
+.pcfb-field .field-settings {
+    margin-top: 10px;
+    padding: 10px;
+    border: 1px solid #ccc;
+    background: #fefefe;
+    border-radius: 4px;
+}
+
+/* لیبل فیلدها */
+.pcfb-public-form label,
+.pcfb-field label {
+    display: block;
+    margin-top: 10px;
+}
+
+/* hover برای دکمه حذف */
+.pcfb-field .remove-field:hover {
+    background: #c0392b;
+}
+
+/* ابزار در حالت Dragging */
+.pcfb-field.dragging {
+    opacity: 0.6;
+}
