@@ -1,0 +1,16 @@
+psych-club-form-builder/
+│
+├── psych-club-form-builder.php       ← فایل اصلی افزونه
+├── admin/
+│   ├── class-pcfb-admin.php          ← مدیریت تب‌ها و صفحات داشبورد
+│   └── views/
+│       ├── settings-page.php         ← تنظیمات عمومی
+│       ├── forms-page.php            ← فرم‌ساز و پیش‌نمایش فرم
+│       └── submissions-page.php      ← مشاهده نتایج ارسال‌ها
+├── public/
+│   ├── class-pcfb-form.php           ← نمایش فرم در سایت
+│   └── css/
+│       └── pcfb-styles.css           ← CSS کامل و مرتب
+├── includes/
+│   └── class-pcfb-db.php             ← مدیریت ذخیره داده‌ها در دیتابیس
+└── README.txt                         ← توضیحات افزونه
