@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 <?php
 if ( ! defined( 'ABSPATH' ) ) exit;
 
@@ -527,3 +528,7 @@ jQuery(document).ready(function($) {
     }
 }
 </style>
+=======
+<h2>نتایج</h2>
+<p>اینجا نتایج فرم‌ها نمایش داده خواهد شد.</p>
+>>>>>>> 790f10da24534e457f5891ff27315d2c30e0e07d

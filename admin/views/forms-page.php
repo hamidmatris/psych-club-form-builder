@@ -1,4 +1,5 @@
 <h2>مدیریت فرم‌ها</h2>
+<<<<<<< HEAD
 <?php
 if ( ! defined( 'ABSPATH' ) ) exit;
 
@@ -18,6 +19,9 @@ if ($form_id > 0) {
 <h2><?php echo esc_html($page_title); ?></h2>
 
 <!-- بقیه کدهای موجود -->
+=======
+
+>>>>>>> 790f10da24534e457f5891ff27315d2c30e0e07d
 <div style="display:flex; gap:20px;" class="pcfb-builder">
     
     <!-- ابزارها -->

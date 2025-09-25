@@ -23,6 +23,7 @@ class PCFB_DB {
     }
 
     public static function insert_form($name, $json) {
+<<<<<<< HEAD
     global $wpdb;
     
     // بررسی و sanitize داده‌ها
@@ -90,6 +91,16 @@ public static function update_form($id, $name, $json) {
     
     return $result;
 }
+=======
+        global $wpdb;
+        $table_name = $wpdb->prefix . self::$table;
+        $wpdb->insert($table_name, [
+            'form_name' => $name,
+            'form_json' => $json
+        ]);
+        return $wpdb->insert_id;
+    }
+>>>>>>> 790f10da24534e457f5891ff27315d2c30e0e07d
 
     public static function get_forms() {
         global $wpdb;
@@ -102,6 +113,7 @@ public static function update_form($id, $name, $json) {
         $table_name = $wpdb->prefix . self::$table;
         return $wpdb->get_row($wpdb->prepare("SELECT * FROM $table_name WHERE id = %d", $id));
     }
+<<<<<<< HEAD
 	
 	// اضافه کردن متدهای缺失 به کلاس PCFB_DB
 public static function update_form($id, $name, $json) {
@@ -121,4 +133,6 @@ if ($tab == 'forms') {
         include PCFB_PATH . 'admin/views/form-list.php';
     }
 }
+=======
+>>>>>>> 790f10da24534e457f5891ff27315d2c30e0e07d
 }

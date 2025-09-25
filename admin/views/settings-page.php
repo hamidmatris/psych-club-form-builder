@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 <?php
 if ( ! defined( 'ABSPATH' ) ) exit;
 
@@ -401,3 +402,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 }
 </style>
+=======
+<h2>تنظیمات عمومی</h2>
+<p>اینجا می‌توانید تنظیمات کلی افزونه را انجام دهید.</p>
+>>>>>>> 790f10da24534e457f5891ff27315d2c30e0e07d

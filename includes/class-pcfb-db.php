@@ -3,6 +3,7 @@ if ( ! defined( 'ABSPATH' ) ) exit;
 
 class PCFB_DB {
     private static $table = 'pcfb_forms';
+<<<<<<< HEAD
     private static $submissions_table = 'pcfb_submissions';
 
     public static function create_table() {
@@ -13,11 +14,21 @@ class PCFB_DB {
         // جدول فرم‌ها
         $forms_table = $wpdb->prefix . self::$table;
         $forms_sql = "CREATE TABLE $forms_table (
+=======
+
+    public static function create_table() {
+        global $wpdb;
+        $table_name = $wpdb->prefix . self::$table;
+        $charset_collate = $wpdb->get_charset_collate();
+
+        $sql = "CREATE TABLE $table_name (
+>>>>>>> 790f10da24534e457f5891ff27315d2c30e0e07d
             id mediumint(9) NOT NULL AUTO_INCREMENT,
             form_name varchar(200) NOT NULL,
             form_json longtext NOT NULL,
             created_at datetime DEFAULT CURRENT_TIMESTAMP NOT NULL,
             updated_at datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP NOT NULL,
+<<<<<<< HEAD
             status tinyint(1) DEFAULT 1 NOT NULL,
             PRIMARY KEY  (id),
             KEY status (status)
@@ -40,10 +51,18 @@ class PCFB_DB {
         require_once( ABSPATH . 'wp-admin/includes/upgrade.php' );
         dbDelta( $forms_sql );
         dbDelta( $submissions_sql );
+=======
+            PRIMARY KEY  (id)
+        ) $charset_collate;";
+
+        require_once( ABSPATH . 'wp-admin/includes/upgrade.php' );
+        dbDelta( $sql );
+>>>>>>> 790f10da24534e457f5891ff27315d2c30e0e07d
     }
 
     public static function insert_form($name, $json) {
         global $wpdb;
+<<<<<<< HEAD
         
         $name = sanitize_text_field( $name );
         if ( empty( $name ) ) {
@@ -136,11 +155,26 @@ class PCFB_DB {
         $query = "SELECT * FROM $table_name{$where} ORDER BY id DESC";
         
         return $wpdb->get_results( $query );
+=======
+        $table_name = $wpdb->prefix . self::$table;
+        $wpdb->insert($table_name, [
+            'form_name' => $name,
+            'form_json' => $json
+        ]);
+        return $wpdb->insert_id;
+    }
+
+    public static function get_forms() {
+        global $wpdb;
+        $table_name = $wpdb->prefix . self::$table;
+        return $wpdb->get_results("SELECT * FROM $table_name ORDER BY id DESC");
+>>>>>>> 790f10da24534e457f5891ff27315d2c30e0e07d
     }
 
     public static function get_form($id) {
         global $wpdb;
         $table_name = $wpdb->prefix . self::$table;
+<<<<<<< HEAD
         
         return $wpdb->get_row( 
             $wpdb->prepare( "SELECT * FROM $table_name WHERE id = %d", $id ) 
@@ -215,3 +249,8 @@ class PCFB_DB {
         return sanitize_text_field( $ip );
     }
 }
+=======
+        return $wpdb->get_row($wpdb->prepare("SELECT * FROM $table_name WHERE id = %d", $id));
+    }
+}
+>>>>>>> 790f10da24534e457f5891ff27315d2c30e0e07d

@@ -3,6 +3,7 @@ if ( ! defined( 'ABSPATH' ) ) exit;
 
 class PCFB_Admin {
 
+<<<<<<< HEAD
     private $tabs = array();
 
     public function __construct() {
@@ -29,6 +30,10 @@ class PCFB_Admin {
                 'callback' => array( $this, 'display_submissions_tab' )
             )
         );
+=======
+    public function __construct() {
+        add_action( 'admin_menu', array( $this, 'add_menu' ) );
+>>>>>>> 790f10da24534e457f5891ff27315d2c30e0e07d
     }
 
     public function add_menu() {
@@ -43,6 +48,7 @@ class PCFB_Admin {
         );
     }
 
+<<<<<<< HEAD
     public function enqueue_admin_scripts( $hook ) {
         // فقط در صفحات مربوط به افزونه اسکریپت‌ها را بارگذاری کن
         if ( strpos( $hook, 'pcfb-settings' ) === false ) {
@@ -164,3 +170,26 @@ class PCFB_Admin {
 }
 
 // نکته مهم: هیچ کد دیگری بعد از این نباید باشد
+=======
+    public function settings_page() {
+        $tab = isset($_GET['tab']) ? $_GET['tab'] : 'general';
+        ?>
+        <div class="wrap">
+            <h1>مدیریت فرم‌های انجمن روانشناسی</h1>
+            <nav class="nav-tab-wrapper">
+                <a href="?page=pcfb-settings&tab=general" class="nav-tab <?php echo $tab=='general'?'nav-tab-active':''; ?>">تنظیمات عمومی</a>
+                <a href="?page=pcfb-settings&tab=forms" class="nav-tab <?php echo $tab=='forms'?'nav-tab-active':''; ?>">فرم‌ها</a>
+                <a href="?page=pcfb-settings&tab=submissions" class="nav-tab <?php echo $tab=='submissions'?'nav-tab-active':''; ?>">نتایج</a>
+            </nav>
+        <?php
+        if ($tab == 'general') {
+            include PCFB_PATH . 'admin/views/settings-page.php';
+        } elseif ($tab == 'forms') {
+            include PCFB_PATH . 'admin/views/forms-page.php';
+        } elseif ($tab == 'submissions') {
+            include PCFB_PATH . 'admin/views/submissions-page.php';
+        }
+        echo "</div>";
+    }
+}
+>>>>>>> 790f10da24534e457f5891ff27315d2c30e0e07d
