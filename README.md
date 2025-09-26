@@ -1,3 +1,25 @@
+ساختار افزونه"
+psych-club-form-builder/
+│
+├── psych-club-form-builder.php
+├── admin/
+│   ├── class-pcfb-admin.php
+│   ├── js/pcfb-admin.js
+│   ├── css/pcfb-admin.css
+│   └── views/
+│       ├── settings-page.php
+│       ├── forms-page.php
+│       ├── form-list.php
+│       └── submissions-page.php
+├── public/
+│   ├── class-pcfb-form.php
+│   ├── js/pcfb-public.js
+│   └── css/pcfb-styles.css
+├── includes/
+│   ├── class-pcfb-db.php
+│   └── class-pcfb-ajax.php
+└── README.txt
+
 🌟 ویژگی‌های اصلی:
 
     ✅ فرم‌ساز بصری (Drag & Drop)
@@ -73,5 +95,6 @@
     امکان توسعه دارد
 
     استانداردهای کدنویسی را رعایت می‌کند
+
 
     کاربرپسند است
