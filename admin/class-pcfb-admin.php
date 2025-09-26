@@ -1,195 +1,222 @@
 <?php
-if ( ! defined( 'ABSPATH' ) ) exit;
+/**
+ * کلاس مدیریت افزونه فرم‌ساز
+ */
 
-class PCFB_Admin {
+if (!defined('ABSPATH')) {
+    exit;
+}
 
-<<<<<<< HEAD
-    private $tabs = array();
+class PCFB_Admin
+{
+    private $tabs = [];
+    private $current_tab = 'general';
 
     public function __construct() {
-        add_action( 'admin_menu', array( $this, 'add_menu' ) );
-        add_action( 'admin_init', array( $this, 'init_tabs' ) );
-        add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_admin_scripts' ) );
+        add_action('admin_menu', [$this, 'add_menu']);
+        add_action('admin_init', [$this, 'init_tabs']);
+        add_action('admin_enqueue_scripts', [$this, 'enqueue_admin_scripts']);
+        add_action('admin_init', [$this, 'handle_form_actions']);
     }
 
     public function init_tabs() {
-        $this->tabs = array(
-            'general' => array(
+        $this->tabs = [
+            'general' => [
                 'title' => 'تنظیمات عمومی',
                 'capability' => 'manage_options',
-                'callback' => array( $this, 'display_general_tab' )
-            ),
-            'forms' => array(
-                'title' => 'فرم‌ها',
+                'callback' => [$this, 'display_general_tab'],
+                'icon' => 'dashicons-admin-settings'
+            ],
+            'forms' => [
+                'title' => 'مدیریت فرم‌ها',
                 'capability' => 'manage_options',
-                'callback' => array( $this, 'display_forms_tab' )
-            ),
-            'submissions' => array(
-                'title' => 'نتایج',
+                'callback' => [$this, 'display_forms_tab'],
+                'icon' => 'dashicons-format-aside'
+            ],
+            'submissions' => [
+                'title' => 'نتایج فرم‌ها',
                 'capability' => 'manage_options',
-                'callback' => array( $this, 'display_submissions_tab' )
-            )
-        );
-=======
-    public function __construct() {
-        add_action( 'admin_menu', array( $this, 'add_menu' ) );
->>>>>>> 790f10da24534e457f5891ff27315d2c30e0e07d
+                'callback' => [$this, 'display_submissions_tab'],
+                'icon' => 'dashicons-list-view'
+            ]
+        ];
+
+        $this->current_tab = $this->get_current_tab();
     }
 
     public function add_menu() {
         add_menu_page(
-            'فرم‌های انجمن روانشناسی',
+            'فرم‌ساز انجمن روانشناسی',
             'فرم‌ساز روانشناسی',
             'manage_options',
             'pcfb-settings',
-            array( $this, 'settings_page' ),
+            [$this, 'settings_page'],
             'dashicons-feedback',
-            26
+            30
         );
     }
 
-<<<<<<< HEAD
-    public function enqueue_admin_scripts( $hook ) {
+    public function enqueue_admin_scripts($hook) {
         // فقط در صفحات مربوط به افزونه اسکریپت‌ها را بارگذاری کن
-        if ( strpos( $hook, 'pcfb-settings' ) === false ) {
+        if (strpos($hook, 'pcfb-settings') === false) {
             return;
         }
-        
-        // کتابخانه‌های وردپرس
-        wp_enqueue_script( 'jquery-ui-sortable' );
-        
-        // اسکریپت اختصاصی admin
+
+        // WordPress libraries
+        wp_enqueue_script('jquery');
+        wp_enqueue_script('jquery-ui-sortable');
+        wp_enqueue_script('wp-util');
+
+        // Admin scripts
         wp_enqueue_script(
             'pcfb-admin',
             PCFB_URL . 'admin/js/pcfb-admin.js',
-            array( 'jquery', 'jquery-ui-sortable' ),
+            ['jquery', 'jquery-ui-sortable', 'wp-util'],
             PCFB_VERSION,
             true
         );
-        
-        // استایل‌های admin
+
+        // Admin styles
         wp_enqueue_style(
             'pcfb-admin',
             PCFB_URL . 'admin/css/pcfb-admin.css',
-            array(),
+            ['wp-components'],
             PCFB_VERSION
         );
-        
-        // انتقال داده‌ها به JavaScript
-        wp_localize_script( 'pcfb-admin', 'pcfb_admin', array(
-            'ajax_url' => admin_url( 'admin-ajax.php' ),
-            'nonce' => wp_create_nonce( 'pcfb_admin_nonce' ),
-            'texts' => array(
-                'confirm_delete' => 'آیا از حذف مطمئن هستید؟',
+
+        // Localize script data
+        wp_localize_script('pcfb-admin', 'pcfb_admin', [
+            'ajax_url' => admin_url('admin-ajax.php'),
+            'nonce' => wp_create_nonce('pcfb_admin_nonce'),
+            'current_tab' => $this->current_tab,
+            'texts' => [
+                'confirm_delete' => 'آیا از حذف این مورد مطمئن هستید؟',
                 'saving' => 'در حال ذخیره...',
+                'saved' => 'ذخیره شد!',
+                'error' => 'خطا رخ داد!',
                 'loading' => 'در حال بارگذاری...'
-            )
-        ) );
+            ]
+        ]);
     }
 
     public function settings_page() {
         // بررسی دسترسی کاربر
-        if ( ! current_user_can( 'manage_options' ) ) {
-            wp_die( __( 'شما دسترسی لازم برای مشاهده این صفحه را ندارید.', 'pcfb' ) );
+        if (!current_user_can('manage_options')) {
+            wp_die(__('شما دسترسی لازم برای مشاهده این صفحه را ندارید.', 'pcfb'));
         }
 
-        $tab = $this->get_current_tab();
+        // نمایش اعلان‌ها
+        $this->display_admin_notices();
         ?>
-        <div class="wrap">
-            <h1>مدیریت فرم‌های انجمن روانشناسی</h1>
+        
+        <div class="wrap pcfb-admin">
+            <h1 class="pcfb-title">
+                <span class="dashicons dashicons-feedback"></span>
+                مدیریت فرم‌های انجمن روانشناسی
+            </h1>
             
             <nav class="nav-tab-wrapper">
-                <?php foreach ( $this->tabs as $tab_key => $tab_data ) : ?>
-                    <?php if ( current_user_can( $tab_data['capability'] ) ) : ?>
-                        <a href="<?php echo esc_url( $this->get_tab_url( $tab_key ) ); ?>" 
-                           class="nav-tab <?php echo $tab === $tab_key ? 'nav-tab-active' : ''; ?>">
-                            <?php echo esc_html( $tab_data['title'] ); ?>
+                <?php foreach ($this->tabs as $tab_key => $tab_data) : ?>
+                    <?php if (current_user_can($tab_data['capability'])) : ?>
+                        <a href="<?php echo esc_url($this->get_tab_url($tab_key)); ?>" 
+                           class="nav-tab <?php echo $this->current_tab === $tab_key ? 'nav-tab-active' : ''; ?>">
+                            <span class="dashicons <?php echo esc_attr($tab_data['icon']); ?>"></span>
+                            <?php echo esc_html($tab_data['title']); ?>
                         </a>
                     <?php endif; ?>
                 <?php endforeach; ?>
             </nav>
 
             <div class="pcfb-tab-content">
-                <?php $this->display_tab_content( $tab ); ?>
+                <?php $this->display_tab_content($this->current_tab); ?>
             </div>
         </div>
         <?php
     }
 
     private function get_current_tab() {
-        $tab = isset( $_GET['tab'] ) ? sanitize_key( $_GET['tab'] ) : 'general';
+        $tab = isset($_GET['tab']) ? sanitize_key($_GET['tab']) : 'general';
         
-        // بررسی وجود تب
-        if ( ! array_key_exists( $tab, $this->tabs ) ) {
-            $tab = 'general';
-        }
-
-        // بررسی دسترسی کاربر
-        if ( ! current_user_can( $this->tabs[ $tab ]['capability'] ) ) {
+        // بررسی وجود تب و دسترسی
+        if (!isset($this->tabs[$tab]) || !current_user_can($this->tabs[$tab]['capability'])) {
             $tab = 'general';
         }
 
         return $tab;
     }
 
-    private function get_tab_url( $tab ) {
-        return add_query_arg( 
-            array( 
-                'page' => 'pcfb-settings', 
-                'tab' => $tab 
-            ),
-            admin_url( 'admin.php' ) 
-        );
+    private function get_tab_url($tab) {
+        return add_query_arg([
+            'page' => 'pcfb-settings',
+            'tab' => $tab
+        ], admin_url('admin.php'));
     }
 
-    private function display_tab_content( $tab ) {
-        if ( isset( $this->tabs[ $tab ]['callback'] ) && is_callable( $this->tabs[ $tab ]['callback'] ) ) {
-            call_user_func( $this->tabs[ $tab ]['callback'] );
+    private function display_tab_content($tab) {
+        if (isset($this->tabs[$tab]['callback']) && is_callable($this->tabs[$tab]['callback'])) {
+            call_user_func($this->tabs[$tab]['callback']);
         } else {
-            echo '<div class="notice notice-error"><p>تب مورد نظر یافت نشد.</p></div>';
+            $this->display_error('تابع نمایش این تب یافت نشد.');
         }
     }
 
     public function display_general_tab() {
-        include PCFB_PATH . 'admin/views/settings-page.php';
+        if (!current_user_can('manage_options')) {
+            $this->display_error('شما دسترسی لازم ندارید.');
+            return;
+        }
+        
+        include_once PCFB_PATH . 'admin/views/settings-page.php';
     }
 
     public function display_forms_tab() {
-        $action = isset( $_GET['action'] ) ? sanitize_text_field( $_GET['action'] ) : 'list';
+        if (!current_user_can('manage_options')) {
+            $this->display_error('شما دسترسی لازم ندارید.');
+            return;
+        }
+
+        $action = isset($_GET['action']) ? sanitize_text_field($_GET['action']) : 'list';
         
-        if ( $action === 'create' || $action === 'edit' ) {
-            include PCFB_PATH . 'admin/views/forms-page.php';
-        } else {
-            include PCFB_PATH . 'admin/views/form-list.php';
+        switch ($action) {
+            case 'create':
+            case 'edit':
+                include_once PCFB_PATH . 'admin/views/form-editor.php';
+                break;
+            case 'list':
+            default:
+                include_once PCFB_PATH . 'admin/views/form-list.php';
+                break;
         }
     }
 
     public function display_submissions_tab() {
-        include PCFB_PATH . 'admin/views/submissions-page.php';
-    }
-}
-
-// نکته مهم: هیچ کد دیگری بعد از این نباید باشد
-=======
-    public function settings_page() {
-        $tab = isset($_GET['tab']) ? $_GET['tab'] : 'general';
-        ?>
-        <div class="wrap">
-            <h1>مدیریت فرم‌های انجمن روانشناسی</h1>
-            <nav class="nav-tab-wrapper">
-                <a href="?page=pcfb-settings&tab=general" class="nav-tab <?php echo $tab=='general'?'nav-tab-active':''; ?>">تنظیمات عمومی</a>
-                <a href="?page=pcfb-settings&tab=forms" class="nav-tab <?php echo $tab=='forms'?'nav-tab-active':''; ?>">فرم‌ها</a>
-                <a href="?page=pcfb-settings&tab=submissions" class="nav-tab <?php echo $tab=='submissions'?'nav-tab-active':''; ?>">نتایج</a>
-            </nav>
-        <?php
-        if ($tab == 'general') {
-            include PCFB_PATH . 'admin/views/settings-page.php';
-        } elseif ($tab == 'forms') {
-            include PCFB_PATH . 'admin/views/forms-page.php';
-        } elseif ($tab == 'submissions') {
-            include PCFB_PATH . 'admin/views/submissions-page.php';
+        if (!current_user_can('manage_options')) {
+            $this->display_error('شما دسترسی لازم ندارید.');
+            return;
         }
-        echo "</div>";
+        
+        include_once PCFB_PATH . 'admin/views/submissions-page.php';
+    }
+
+    private function display_admin_notices() {
+        // نمایش اعلان‌های سیستمی
+        if (isset($_GET['message'])) {
+            $message = sanitize_text_field($_GET['message']);
+            $type = isset($_GET['type']) ? sanitize_text_field($_GET['type']) : 'success';
+            
+            $class = $type === 'error' ? 'notice-error' : 'notice-success';
+            echo '<div class="notice ' . $class . ' is-dismissible"><p>' . esc_html($message) . '</p></div>';
+        }
+    }
+
+    private function display_error($message) {
+        echo '<div class="notice notice-error"><p>' . esc_html($message) . '</p></div>';
+    }
+
+    public function handle_form_actions() {
+        // مدیریت اقدامات فرم‌ها (در آینده پیاده‌سازی شود)
+        if (!isset($_POST['pcfb_action']) || !wp_verify_nonce($_POST['_wpnonce'], 'pcfb_admin_action')) {
+            return;
+        }
     }
 }
->>>>>>> 790f10da24534e457f5891ff27315d2c30e0e07d

@@ -1,64 +1,710 @@
-.pcfb-builder .pcfb-tool{
-    cursor: grab;
-    padding: 5px;
-    margin: 5px 0;
-    background: #eee;
-}
-.pcfb-field:hover{
-    background: #f0f8ff;
-    cursor: pointer;
-}
-/* استایل‌های پایه برای بخش مدیریت */
-.pcfb-builder {
-    display: flex;
-    gap: 20px;
-    margin: 20px 0;
+/**
+ * Psych Club Form Builder - Admin CSS
+ * استایل‌های بخش مدیریت وردپرس
+ */
+
+:root {
+    /* رنگ‌های اصلی */
+    --pcfb-primary: #0073aa;
+    --pcfb-primary-dark: #005a87;
+    --pcfb-primary-light: #0096dd;
+    --pcfb-secondary: #6c757d;
+    --pcfb-success: #28a745;
+    --pcfb-danger: #dc3545;
+    --pcfb-warning: #ffc107;
+    --pcfb-info: #17a2b8;
+    
+    /* رنگ‌های زمینه */
+    --pcfb-bg-light: #f8f9fa;
+    --pcfb-bg-lighter: #ffffff;
+    --pcfb-bg-dark: #343a40;
+    --pcfb-bg-darker: #1d2327;
+    
+    /* سایه‌ها */
+    --pcfb-shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.1);
+    --pcfb-shadow-md: 0 4px 6px rgba(0, 0, 0, 0.1);
+    --pcfb-shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.1);
+    
+    /* انیمیشن‌ها */
+    --pcfb-transition: all 0.3s ease;
+    --pcfb-transition-fast: all 0.15s ease;
+    
+    /* فونت‌ها */
+    --pcfb-font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen-Sans, Ubuntu, Cantarell, 'Helvetica Neue', sans-serif;
+    --pcfb-font-size-sm: 0.875rem;
+    --pcfb-font-size-base: 1rem;
+    --pcfb-font-size-lg: 1.125rem;
+    --pcfb-font-size-xl: 1.25rem;
 }
 
-.pcfb-tools {
-    width: 30%;
-    background: #f8f9fa;
+/* Reset و پایه */
+.pcfb-admin * {
+    box-sizing: border-box;
+}
+
+.pcfb-admin {
+    font-family: var(--pcfb-font-family);
+    line-height: 1.6;
+    color: #2c3338;
+}
+
+/* ==================== ساختار اصلی ==================== */
+.pcfb-builder-container {
+    max-width: 1400px;
+    margin: 0 auto;
     padding: 20px;
+}
+
+.pcfb-builder-header {
+    background: var(--pcfb-bg-lighter);
     border-radius: 8px;
+    padding: 25px;
+    margin-bottom: 25px;
+    box-shadow: var(--pcfb-shadow-sm);
+    border: 1px solid #ccd0d4;
+}
+
+.pcfb-form-info {
+    display: flex;
+    align-items: center;
+    gap: 25px;
+    flex-wrap: wrap;
+}
+
+.pcfb-form-name-input {
+    flex: 1;
+    min-width: 300px;
+    padding: 12px 15px;
+    border: 2px solid #ccd0d4;
+    border-radius: 6px;
+    font-size: var(--pcfb-font-size-lg);
+    transition: var(--pcfb-transition-fast);
+}
+
+.pcfb-form-name-input:focus {
+    outline: none;
+    border-color: var(--pcfb-primary);
+    box-shadow: 0 0 0 3px rgba(0, 115, 170, 0.1);
+}
+
+.pcfb-form-actions {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+}
+
+/* ==================== رابط فرم‌ساز ==================== */
+.pcfb-builder-interface {
+    display: grid;
+    grid-template-columns: 280px 1fr 320px;
+    gap: 25px;
+    margin-bottom: 30px;
+    min-height: 600px;
+}
+
+/* پنل ابزارها */
+.pcfb-tools-panel {
+    background: var(--pcfb-bg-lighter);
+    border-radius: 8px;
+    box-shadow: var(--pcfb-shadow-sm);
+    border: 1px solid #ccd0d4;
+    overflow: hidden;
+}
+
+.pcfb-panel-title {
+    background: var(--pcfb-bg-dark);
+    color: white;
+    margin: 0;
+    padding: 18px 20px;
+    font-size: var(--pcfb-font-size-lg);
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.pcfb-tools-list {
+    padding: 15px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    max-height: 500px;
+    overflow-y: auto;
+}
+
+.pcfb-tool-item {
+    background: var(--pcfb-bg-light);
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    padding: 12px 15px;
+    cursor: grab;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    transition: var(--pcfb-transition);
+    user-select: none;
+}
+
+.pcfb-tool-item:hover {
+    background: var(--pcfb-primary);
+    color: white;
+    border-color: var(--pcfb-primary);
+    transform: translateY(-2px);
+    box-shadow: var(--pcfb-shadow-md);
+}
+
+.pcfb-tool-item:active {
+    cursor: grabbing;
+    transform: translateY(0);
+}
+
+.pcfb-tool-item.dragging {
+    opacity: 0.6;
+    transform: rotate(5deg);
+}
+
+.tool-icon {
+    font-size: 1.2em;
+    width: 24px;
+    text-align: center;
+}
+
+.tool-content {
+    flex: 1;
+}
+
+.tool-label {
+    font-weight: 600;
+    font-size: var(--pcfb-font-size-base);
+}
+
+.tool-description {
+    font-size: var(--pcfb-font-size-sm);
+    opacity: 0.8;
+    margin-top: 2px;
+}
+
+/* پنل پیش‌نمایش */
+.pcfb-preview-panel {
+    background: var(--pcfb-bg-lighter);
+    border-radius: 8px;
+    box-shadow: var(--pcfb-shadow-sm);
+    border: 1px solid #ccd0d4;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.pcfb-preview-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 18px 20px;
+    background: var(--pcfb-bg-light);
+    border-bottom: 1px solid #ccd0d4;
+}
+
+.pcfb-field-count {
+    font-size: var(--pcfb-font-size-sm);
+    color: var(--pcfb-secondary);
+    background: white;
+    padding: 4px 8px;
+    border-radius: 12px;
     border: 1px solid #ddd;
 }
 
-.pcfb-tool {
-    background: #007cba;
-    color: white;
-    padding: 12px 15px;
-    margin: 10px 0;
-    border-radius: 6px;
-    cursor: grab;
-    display: block;
-    transition: all 0.3s ease;
-}
-
-.pcfb-preview {
+.pcfb-preview-area {
     flex: 1;
-    min-height: 400px;
-    border: 2px dashed #ddd;
     padding: 25px;
-    border-radius: 8px;
-    background: #fff;
+    min-height: 500px;
+    overflow-y: auto;
+    background: 
+        linear-gradient(45deg, #f8f9fa 25%, transparent 25%), 
+        linear-gradient(-45deg, #f8f9fa 25%, transparent 25%), 
+        linear-gradient(45deg, transparent 75%, #f8f9fa 75%), 
+        linear-gradient(-45deg, transparent 75%, #f8f9fa 75%);
+    background-size: 20px 20px;
+    background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
 }
 
+.pcfb-preview-area.drag-over {
+    background-color: #f0f8ff;
+    border-color: var(--pcfb-primary);
+}
+
+.pcfb-empty-state {
+    text-align: center;
+    padding: 60px 30px;
+    color: #6c757d;
+}
+
+.empty-icon {
+    font-size: 48px;
+    margin-bottom: 15px;
+    opacity: 0.5;
+}
+
+/* فیلدها در پیش‌نمایش */
 .pcfb-field {
-    margin: 15px 0;
-    padding: 15px;
-    border: 1px dashed #ccc;
-    border-radius: 6px;
-    background: #f9f9f9;
+    background: white;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 20px;
+    transition: var(--pcfb-transition);
     position: relative;
+    cursor: move;
 }
 
-/* استایل‌های responsive */
+.pcfb-field:hover {
+    border-color: var(--pcfb-primary-light);
+    box-shadow: var(--pcfb-shadow-sm);
+}
+
+.pcfb-field.selected {
+    border-color: var(--pcfb-primary);
+    border-width: 2px;
+    box-shadow: 0 0 0 3px rgba(0, 115, 170, 0.1);
+}
+
+.pcfb-field-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 15px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.pcfb-field-info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.field-type-icon {
+    font-size: 1.2em;
+    opacity: 0.7;
+}
+
+.field-label {
+    font-weight: 600;
+    color: #2c3338;
+}
+
+.field-required-badge {
+    background: var(--pcfb-danger);
+    color: white;
+    font-size: var(--pcfb-font-size-sm);
+    padding: 2px 6px;
+    border-radius: 3px;
+    margin-left: 8px;
+}
+
+.pcfb-field-actions {
+    display: flex;
+    gap: 5px;
+    opacity: 0;
+    transition: var(--pcfb-transition-fast);
+}
+
+.pcfb-field:hover .pcfb-field-actions {
+    opacity: 1;
+}
+
+.pcfb-field-settings-btn,
+.pcfb-field-remove {
+    background: none;
+    border: none;
+    padding: 6px;
+    border-radius: 3px;
+    cursor: pointer;
+    color: #6c757d;
+    transition: var(--pcfb-transition-fast);
+}
+
+.pcfb-field-settings-btn:hover {
+    background: var(--pcfb-primary);
+    color: white;
+}
+
+.pcfb-field-remove:hover {
+    background: var(--pcfb-danger);
+    color: white;
+}
+
+.pcfb-field-preview {
+    margin-top: 10px;
+}
+
+/* پنل تنظیمات */
+.pcfb-settings-panel {
+    background: var(--pcfb-bg-lighter);
+    border-radius: 8px;
+    box-shadow: var(--pcfb-shadow-sm);
+    border: 1px solid #ccd0d4;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.pcfb-field-settings {
+    flex: 1;
+    padding: 20px;
+    overflow-y: auto;
+}
+
+.pcfb-no-selection {
+    text-align: center;
+    padding: 40px 20px;
+    color: #6c757d;
+}
+
+.pcfb-setting-group {
+    margin-bottom: 20px;
+}
+
+.pcfb-setting-group label {
+    display: block;
+    margin-bottom: 6px;
+    font-weight: 600;
+    color: #2c3338;
+}
+
+.pcfb-setting-input,
+.pcfb-setting-textarea {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: var(--pcfb-font-size-base);
+    transition: var(--pcfb-transition-fast);
+}
+
+.pcfb-setting-input:focus,
+.pcfb-setting-textarea:focus {
+    outline: none;
+    border-color: var(--pcfb-primary);
+    box-shadow: 0 0 0 3px rgba(0, 115, 170, 0.1);
+}
+
+.pcfb-setting-checkbox {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+}
+
+.pcfb-options-container {
+    margin: 10px 0;
+    border: 1px solid #eee;
+    border-radius: 4px;
+    padding: 10px;
+    background: #fafafa;
+}
+
+.pcfb-option-item {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 8px;
+    align-items: center;
+}
+
+.pcfb-option-item:last-child {
+    margin-bottom: 0;
+}
+
+.pcfb-option-input {
+    flex: 1;
+    padding: 6px 8px;
+    border: 1px solid #ddd;
+    border-radius: 3px;
+}
+
+/* پنل کد */
+.pcfb-code-panel {
+    background: var(--pcfb-bg-lighter);
+    border-radius: 8px;
+    box-shadow: var(--pcfb-shadow-sm);
+    border: 1px solid #ccd0d4;
+    overflow: hidden;
+}
+
+.pcfb-code-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 18px 20px;
+    background: var(--pcfb-bg-light);
+    border-bottom: 1px solid #ccd0d4;
+}
+
+.pcfb-code-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.pcfb-code-container {
+    padding: 20px;
+    background: #1d2327;
+    color: #f0f0f1;
+    font-family: 'Courier New', monospace;
+    font-size: 13px;
+    line-height: 1.4;
+    max-height: 300px;
+    overflow: auto;
+}
+
+/* ==================== کامپوننت‌های فرم ==================== */
+.pcfb-input,
+.pcfb-textarea,
+.pcfb-select {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: var(--pcfb-font-size-base);
+    transition: var(--pcfb-transition-fast);
+}
+
+.pcfb-input:focus,
+.pcfb-textarea:focus,
+.pcfb-select:focus {
+    outline: none;
+    border-color: var(--pcfb-primary);
+    box-shadow: 0 0 0 3px rgba(0, 115, 170, 0.1);
+}
+
+.pcfb-checkbox-option,
+.pcfb-radio-option {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 5px 0;
+    cursor: pointer;
+}
+
+/* ==================== دکمه‌ها ==================== */
+.pcfb-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 6px;
+    font-size: var(--pcfb-font-size-base);
+    font-weight: 600;
+    cursor: pointer;
+    transition: var(--pcfb-transition);
+    text-decoration: none;
+    line-height: 1;
+}
+
+.pcfb-btn-primary {
+    background: var(--pcfb-primary);
+    color: white;
+}
+
+.pcfb-btn-primary:hover {
+    background: var(--pcfb-primary-dark);
+    transform: translateY(-1px);
+    box-shadow: var(--pcfb-shadow-md);
+}
+
+.pcfb-btn-secondary {
+    background: #6c757d;
+    color: white;
+}
+
+.pcfb-btn-danger {
+    background: var(--pcfb-danger);
+    color: white;
+}
+
+.pcfb-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none !important;
+}
+
+/* ==================== اسپینر و loading ==================== */
+.pcfb-spinner {
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    border: 2px solid #f3f3f3;
+    border-top: 2px solid var(--pcfb-primary);
+    border-radius: 50%;
+    animation: pcfb-spin 1s linear infinite;
+}
+
+@keyframes pcfb-spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* ==================== مرتب‌سازی ==================== */
+.pcfb-field-placeholder {
+    border: 2px dashed var(--pcfb-primary);
+    background: rgba(0, 115, 170, 0.05);
+    border-radius: 8px;
+    margin-bottom: 20px;
+    height: 100px;
+}
+
+/* ==================== پیام‌ها و اعلان‌ها ==================== */
+.pcfb-message {
+    padding: 12px 15px;
+    border-radius: 6px;
+    margin: 10px 0;
+    border-left: 4px solid;
+}
+
+.pcfb-message-success {
+    background: #d4edda;
+    border-color: var(--pcfb-success);
+    color: #155724;
+}
+
+.pcfb-message-error {
+    background: #f8d7da;
+    border-color: var(--pcfb-danger);
+    color: #721c24;
+}
+
+.pcfb-message-warning {
+    background: #fff3cd;
+    border-color: var(--pcfb-warning);
+    color: #856404;
+}
+
+/* ==================== Responsive Design ==================== */
+@media (max-width: 1200px) {
+    .pcfb-builder-interface {
+        grid-template-columns: 250px 1fr;
+    }
+    
+    .pcfb-settings-panel {
+        grid-column: 1 / -1;
+        order: 3;
+    }
+}
+
 @media (max-width: 768px) {
-    .pcfb-builder {
+    .pcfb-builder-container {
+        padding: 15px;
+    }
+    
+    .pcfb-builder-interface {
+        grid-template-columns: 1fr;
+        gap: 20px;
+    }
+    
+    .pcfb-form-info {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .pcfb-form-name-input {
+        min-width: auto;
+    }
+    
+    .pcfb-form-actions {
         flex-direction: column;
     }
     
-    .pcfb-tools {
-        width: 100%;
+    .pcfb-tools-panel,
+    .pcfb-preview-panel,
+    .pcfb-settings-panel {
+        grid-column: 1 / -1;
+    }
+    
+    .pcfb-field-actions {
+        opacity: 1 !important;
+    }
+}
+
+@media (max-width: 480px) {
+    .pcfb-builder-container {
+        padding: 10px;
+    }
+    
+    .pcfb-builder-header {
+        padding: 20px;
+    }
+    
+    .pcfb-preview-area {
+        padding: 15px;
+    }
+    
+    .pcfb-field {
+        padding: 15px;
+    }
+}
+
+/* ==================== Utility Classes ==================== */
+.pcfb-text-center { text-align: center; }
+.pcfb-text-left { text-align: left; }
+.pcfb-text-right { text-align: right; }
+
+.pcfb-mt-1 { margin-top: 0.25rem; }
+.pcfb-mt-2 { margin-top: 0.5rem; }
+.pcfb-mt-3 { margin-top: 1rem; }
+.pcfb-mt-4 { margin-top: 1.5rem; }
+.pcfb-mt-5 { margin-top: 3rem; }
+
+.pcfb-mb-1 { margin-bottom: 0.25rem; }
+.pcfb-mb-2 { margin-bottom: 0.5rem; }
+.pcfb-mb-3 { margin-bottom: 1rem; }
+.pcfb-mb-4 { margin-bottom: 1.5rem; }
+.pcfb-mb-5 { margin-bottom: 3rem; }
+
+.pcfb-d-none { display: none; }
+.pcfb-d-block { display: block; }
+.pcfb-d-flex { display: flex; }
+.pcfb-d-grid { display: grid; }
+
+/* ==================== Dark Mode Support ==================== */
+@media (prefers-color-scheme: dark) {
+    .pcfb-admin {
+        color: #e0e0e0;
+    }
+    
+    .pcfb-builder-header,
+    .pcfb-tools-panel,
+    .pcfb-preview-panel,
+    .pcfb-settings-panel,
+    .pcfb-code-panel {
+        background: #2d2d2d;
+        border-color: #404040;
+    }
+    
+    .pcfb-field {
+        background: #363636;
+        border-color: #404040;
+    }
+    
+    .pcfb-setting-input,
+    .pcfb-setting-textarea,
+    .pcfb-input,
+    .pcfb-textarea,
+    .pcfb-select {
+        background: #404040;
+        border-color: #555;
+        color: #e0e0e0;
+    }
+}
+
+/* ==================== Print Styles ==================== */
+@media print {
+    .pcfb-form-actions,
+    .pcfb-field-actions,
+    .pcfb-code-actions {
+        display: none !important;
+    }
+    
+    .pcfb-builder-header {
+        box-shadow: none !important;
+        border: 1px solid #000 !important;
     }
 }

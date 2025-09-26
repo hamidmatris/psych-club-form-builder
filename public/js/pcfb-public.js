@@ -1,364 +1,513 @@
 /**
  * Psych Club Form Builder - Frontend JavaScript
- * مدیریت فرم‌ها در بخش عمومی سایت
+ * مدیریت فرم‌ها در بخش عمومی سایت - نسخه بهبود یافته
  */
 
-jQuery(document).ready(function($) {
+(function($) {
     'use strict';
 
-    // آبجکت اصلی برای مدیریت فرم‌های frontend
-    const PCFB_Frontend = {
-        
-        // متغیرهای global
-        vars: {
-            isSubmitting: false
-        },
+    class PCFBFrontend {
+        constructor() {
+            this.isSubmitting = false;
+            this.submissionQueue = new Map();
+            this.init();
+        }
 
-        // مقداردهی اولیه
-        init: function() {
-            this.initFormSubmission();
-            this.initRealTimeValidation();
-            this.initFormMessages();
+        init() {
+            this.bindEvents();
+            this.initFormValidation();
+            this.initFileUploads();
+            this.initCharacterCounters();
             console.log('PCFB Frontend initialized');
-        },
+        }
 
-        // مدیریت ارسال فرم‌ها
-        initFormSubmission: function() {
-            const self = this;
+        bindEvents() {
+            // ارسال فرم
+            $(document).on('submit', '.pcfb-public-form', (e) => this.handleFormSubmit(e));
             
-            // رویداد submit برای تمام فرم‌های pcfb
-            $(document).on('submit', '.pcfb-public-form', function(e) {
-                e.preventDefault();
-                
-                if (self.vars.isSubmitting) {
-                    return false;
-                }
-
-                const $form = $(this);
-                const formId = $form.find('input[name="form_id"]').val();
-                const $submitBtn = $form.find('.pcfb-submit-btn');
-                const $messagesContainer = $form.find('.pcfb-form-messages');
-                
-                console.log('Form submission started for ID:', formId);
-
-                // اعتبارسنجی اولیه
-                const validation = self.validateForm($form);
-                if (!validation.isValid) {
-                    self.showMessage($messagesContainer, validation.message, 'error');
-                    self.highlightInvalidFields(validation.invalidFields);
-                    return false;
-                }
-
-                // شروع ارسال
-                self.vars.isSubmitting = true;
-                
-                self.setButtonState($submitBtn, 'loading');
-                self.clearMessages($messagesContainer);
-                self.removeFieldErrors($form);
-
-                // جمع‌آوری داده‌های فرم
-                const formData = self.collectFormData($form);
-                console.log('Form data collected:', formData);
-
-                // ارسال AJAX
-                $.ajax({
-                    url: pcfb_public.ajax_url,
-                    type: 'POST',
-                    data: {
-                        action: 'pcfb_submit_form',
-                        form_id: formId,
-                        form_data: formData,
-                        nonce: pcfb_public.nonce
-                    },
-                    dataType: 'json',
-                    timeout: 30000,
-                    success: function(response) {
-                        console.log('Server response:', response);
-                        
-                        if (response.success) {
-                            self.handleSubmissionSuccess($form, response.data);
-                        } else {
-                            self.handleSubmissionError($messagesContainer, response.data);
-                        }
-                    },
-                    error: function(xhr, status, error) {
-                        console.error('AJAX Error:', error);
-                        console.error('Status:', status);
-                        console.error('Response:', xhr.responseText);
-                        
-                        let errorMessage = 'خطای ارتباط با سرور. لطفاً مجدداً تلاش کنید.';
-                        if (status === 'timeout') {
-                            errorMessage = 'زمان ارسال به پایان رسید. لطفاً مجدداً تلاش کنید.';
-                        }
-                        
-                        self.handleSubmissionError($messagesContainer, errorMessage);
-                    },
-                    complete: function() {
-                        self.vars.isSubmitting = false;
-                        self.setButtonState($submitBtn, 'normal');
-                    }
-                });
-            });
-        },
-
-        // اعتبارسنجی real-time فیلدها
-        initRealTimeValidation: function() {
-            const self = this;
+            // اعتبارسنجی real-time
+            $(document).on('blur change input', '.pcfb-public-form [data-validate]', (e) => 
+                this.validateField($(e.target)));
             
-            $(document).on('blur', '.pcfb-public-form input, .pcfb-public-form select, .pcfb-public-form textarea', function() {
-                const $field = $(this);
-                self.validateField($field);
-            });
+            // مدیریت فایل‌ها
+            $(document).on('change', '.pcfb-public-form input[type="file"]', (e) => 
+                this.handleFileSelection(e));
             
-            $(document).on('input', '.pcfb-public-form input[required], .pcfb-public-form textarea[required]', function() {
-                const $field = $(this);
-                if ($field.val().trim() !== '') {
-                    self.removeFieldError($field);
-                }
-            });
-        },
+            // بستن پیام‌ها
+            $(document).on('click', '.pcfb-close-message', (e) => 
+                this.closeMessage($(e.target).closest('.pcfb-form-message')));
+        }
 
-        // مدیریت پیام‌های فرم
-        initFormMessages: function() {
-            const self = this;
+        /**
+         * مدیریت ارسال فرم
+         */
+        async handleFormSubmit(e) {
+            e.preventDefault();
             
-            $(document).on('click', '.pcfb-form-messages .pcfb-close-message', function() {
-                $(this).closest('.pcfb-form-message').fadeOut();
-            });
-        },
-
-        // اعتبارسنجی کامل فرم
-        validateForm: function($form) {
-            const invalidFields = [];
-            let isValid = true;
-            let errorMessage = '';
+            const $form = $(e.target);
+            const formId = $form.data('form-id') || $form.find('input[name="form_id"]').val();
             
-            // بررسی فیلدهای اجباری
-            $form.find('[required]').each(function() {
-                const $field = $(this);
-                const fieldValidation = self.validateFieldType($field);
-                
-                if (!fieldValidation.isValid) {
-                    isValid = false;
-                    invalidFields.push($field);
-                    
-                    if (!errorMessage) {
-                        errorMessage = fieldValidation.message;
-                    }
-                }
-            });
-            
-            return {
-                isValid: isValid,
-                message: errorMessage || 'لطفاً خطاهای فرم را برطرف کنید.',
-                invalidFields: invalidFields
-            };
-        },
-
-        // اعتبارسنجی یک فیلد خاص
-        validateField: function($field) {
-            const validation = this.validateFieldType($field);
-            
-            if (!validation.isValid) {
-                this.showFieldError($field, validation.message);
+            if (this.isSubmitting) {
+                this.showToast('لطفاً منتظر بمانید...', 'warning');
                 return false;
-            } else {
-                this.removeFieldError($field);
-                return true;
             }
-        },
 
-        // اعتبارسنجی بر اساس نوع فیلد
-        validateFieldType: function($field) {
+            // بررسی وجود فرم در صف
+            if (this.submissionQueue.has(formId)) {
+                this.showToast('این فرم در حال ارسال است...', 'warning');
+                return false;
+            }
+
+            // اعتبارسنجی پیش از ارسال
+            const validation = await this.validateForm($form);
+            if (!validation.isValid) {
+                this.showFormErrors($form, validation.errors);
+                this.scrollToFirstError($form);
+                return false;
+            }
+
+            return this.submitForm($form, formId);
+        }
+
+        /**
+         * اعتبارسنجی کامل فرم
+         */
+        async validateForm($form) {
+            const errors = [];
+            const $fields = $form.find('[name]:not([type="hidden"]):not([disabled])');
+            
+            for (let field of $fields) {
+                const $field = $(field);
+                const fieldErrors = await this.validateField($field, true);
+                
+                if (fieldErrors.length > 0) {
+                    errors.push({
+                        field: $field,
+                        errors: fieldErrors
+                    });
+                }
+            }
+
+            // اعتبارسنجی custom (مثلاً مقایسه پسوردها)
+            const customErrors = this.validateCustomRules($form);
+            errors.push(...customErrors);
+
+            return {
+                isValid: errors.length === 0,
+                errors: errors
+            };
+        }
+
+        /**
+         * اعتبارسنجی یک فیلد
+         */
+        async validateField($field, silent = false) {
+            const errors = [];
             const value = $field.val().trim();
-            const isRequired = $field.prop('required');
             const fieldType = $field.attr('type') || $field.prop('tagName').toLowerCase();
+            const isRequired = $field.prop('required') || $field.attr('data-required') === 'true';
             
             // بررسی فیلدهای اجباری
-            if (isRequired && value === '') {
-                return {
-                    isValid: false,
-                    message: 'این فیلد اجباری است.'
-                };
+            if (isRequired && !value) {
+                errors.push('این فیلد اجباری است');
             }
             
-            // اگر فیلد خالی است و اجباری نیست، معتبر است
-            if (value === '' && !isRequired) {
-                return { isValid: true };
+            // اگر فیلد خالی است و اجباری نیست، بررسی بیشتر نیاز نیست
+            if (!value && !isRequired) {
+                if (!silent) this.clearFieldError($field);
+                return errors;
             }
             
             // اعتبارسنجی بر اساس نوع فیلد
             switch (fieldType) {
                 case 'email':
                     if (!this.isValidEmail(value)) {
-                        return {
-                            isValid: false,
-                            message: 'لطفاً یک ایمیل معتبر وارد کنید.'
-                        };
+                        errors.push('لطفاً یک ایمیل معتبر وارد کنید');
                     }
                     break;
                     
                 case 'number':
-                    if (!this.isValidNumber(value)) {
-                        return {
-                            isValid: false,
-                            message: 'لطفاً یک عدد معتبر وارد کنید.'
-                        };
+                    const numberValidation = this.validateNumberField($field, value);
+                    if (!numberValidation.isValid) {
+                        errors.push(numberValidation.error);
+                    }
+                    break;
+                    
+                case 'tel':
+                    if (!this.isValidPhoneNumber(value)) {
+                        errors.push('لطفاً شماره تلفن معتبر وارد کنید');
+                    }
+                    break;
+                    
+                case 'url':
+                    if (!this.isValidUrl(value)) {
+                        errors.push('لطفاً آدرس اینترنتی معتبر وارد کنید');
+                    }
+                    break;
+                    
+                case 'date':
+                    if (!this.isValidDate(value)) {
+                        errors.push('لطفاً تاریخ معتبر وارد کنید');
+                    }
+                    break;
+                    
+                case 'file':
+                    const fileValidation = await this.validateFileField($field);
+                    if (!fileValidation.isValid) {
+                        errors.push(...fileValidation.errors);
                     }
                     break;
             }
             
-            return { isValid: true };
-        },
-
-        // جمع‌آوری داده‌های فرم
-        collectFormData: function($form) {
-            const formData = {};
+            // اعتبارسنجی طول متن
+            const lengthValidation = this.validateFieldLength($field, value);
+            if (!lengthValidation.isValid) {
+                errors.push(lengthValidation.error);
+            }
             
-            $form.find('input, select, textarea').each(function() {
-                const $field = $(this);
-                const fieldName = $field.attr('name');
-                const fieldType = $field.attr('type');
+            // اعتبارسنجی pattern
+            const patternValidation = this.validateFieldPattern($field, value);
+            if (!patternValidation.isValid) {
+                errors.push(patternValidation.error);
+            }
+            
+            // نمایش یا پاک کردن خطاها
+            if (!silent) {
+                if (errors.length > 0) {
+                    this.showFieldError($field, errors[0]);
+                } else {
+                    this.clearFieldError($field);
+                }
+            }
+            
+            return errors;
+        }
+
+        /**
+         * ارسال فرم به سرور
+         */
+        async submitForm($form, formId) {
+            this.isSubmitting = true;
+            this.submissionQueue.set(formId, true);
+            
+            const $submitBtn = $form.find('.pcfb-submit-btn');
+            const $messagesContainer = $form.find('.pcfb-form-messages');
+            
+            try {
+                this.setButtonState($submitBtn, 'loading');
+                this.clearMessages($messagesContainer);
+                this.clearAllFieldErrors($form);
                 
-                if (!fieldName || $field.attr('disabled') || fieldName === 'form_id') {
-                    return;
+                // جمع‌آوری داده‌های فرم (شامل فایل‌ها)
+                const formData = await this.prepareFormData($form);
+                
+                // ارسال درخواست
+                const response = await this.sendFormData(formData);
+                
+                if (response.success) {
+                    await this.handleSuccessResponse($form, response.data);
+                } else {
+                    throw new Error(response.data || 'خطای نامشخص از سرور');
                 }
                 
-                if (fieldType === 'checkbox') {
-                    if (!formData[fieldName]) {
-                        formData[fieldName] = [];
-                    }
-                    if ($field.is(':checked')) {
-                        formData[fieldName].push($field.val());
-                    }
-                } else if (fieldType === 'radio') {
-                    if ($field.is(':checked')) {
-                        formData[fieldName] = $field.val();
-                    }
-                } else {
-                    formData[fieldName] = $field.val();
+            } catch (error) {
+                this.handleSubmissionError($messagesContainer, error.message);
+                console.error('Form submission error:', error);
+                
+            } finally {
+                this.isSubmitting = false;
+                this.submissionQueue.delete(formId);
+                this.setButtonState($submitBtn, 'normal');
+            }
+        }
+
+        /**
+         * آماده‌سازی داده‌های فرم برای ارسال
+         */
+        async prepareFormData($form) {
+            const formData = new FormData();
+            const fieldsData = {};
+            
+            // افزودن فیلدهای استاندارد
+            $form.serializeArray().forEach(item => {
+                if (item.name !== 'form_data') {
+                    formData.append(item.name, item.value);
+                    fieldsData[item.name] = item.value;
                 }
             });
             
+            // افزودن فایل‌ها
+            const fileFields = $form.find('input[type="file"]');
+            for (let field of fileFields) {
+                const $field = $(field);
+                const files = $field[0].files;
+                
+                if (files.length > 0) {
+                    for (let i = 0; i < files.length; i++) {
+                        formData.append(`${$field.attr('name')}[]`, files[i]);
+                    }
+                }
+            }
+            
+            // افزودن داده‌های JSON
+            formData.append('form_data', JSON.stringify(fieldsData));
+            formData.append('action', 'pcfb_submit_form');
+            formData.append('nonce', pcfb_public.nonce);
+            
             return formData;
-        },
+        }
 
-        // مدیریت موفقیت‌آمیز ارسال
-        handleSubmissionSuccess: function($form, responseData) {
+        /**
+         * ارسال داده‌ها به سرور
+         */
+        async sendFormData(formData) {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 30000);
+            
+            try {
+                const response = await fetch(pcfb_public.ajax_url, {
+                    method: 'POST',
+                    body: formData,
+                    signal: controller.signal
+                });
+                
+                clearTimeout(timeoutId);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                return await response.json();
+                
+            } catch (error) {
+                if (error.name === 'AbortError') {
+                    throw new Error('زمان ارسال به پایان رسید. لطفاً مجدداً تلاش کنید.');
+                }
+                throw error;
+            }
+        }
+
+        /**
+         * مدیریت پاسخ موفقیت‌آمیز
+         */
+        async handleSuccessResponse($form, responseData) {
             const $messagesContainer = $form.find('.pcfb-form-messages');
             
+            // نمایش پیام موفقیت
             this.showMessage($messagesContainer, responseData.message, 'success');
+            
+            // پاک کردن فرم
             this.clearForm($form);
             
-            // اسکرول به پیام موفقیت
-            $('html, body').animate({
-                scrollTop: $messagesContainer.offset().top - 100
-            }, 500);
-        },
+            // redirect اگر مشخص شده
+            if (responseData.redirect) {
+                setTimeout(() => {
+                    window.location.href = responseData.redirect;
+                }, 2000);
+            }
+            
+            // اسکرول به پیام
+            this.scrollToElement($messagesContainer);
+            
+            // رویداد custom برای integrations
+            $(document).trigger('pcfb:formSubmitted', [responseData]);
+        }
 
-        // مدیریت خطای ارسال
-        handleSubmissionError: function($messagesContainer, errorMessage) {
-            this.showMessage($messagesContainer, errorMessage, 'error');
-        },
+        /**
+         * مدیریت خطاهای ارسال
+         */
+        handleSubmissionError($container, errorMessage) {
+            this.showMessage($container, errorMessage, 'error');
+            this.scrollToElement($container);
+        }
 
-        // نمایش پیام
-        showMessage: function($container, message, type) {
-            const messageClass = type === 'success' ? 'pcfb-message-success' : 'pcfb-message-error';
-            const icon = type === 'success' ? '✅' : '❌';
+        /**
+         * نمایش پیام به کاربر
+         */
+        showMessage($container, message, type) {
+            const icons = {
+                success: '✅',
+                error: '❌',
+                warning: '⚠️',
+                info: 'ℹ️'
+            };
             
             const messageHTML = `
-                <div class="pcfb-form-message ${messageClass}">
-                    <span class="pcfb-message-icon">${icon}</span>
+                <div class="pcfb-form-message pcfb-message-${type}">
+                    <span class="pcfb-message-icon">${icons[type]}</span>
                     <span class="pcfb-message-text">${message}</span>
-                    <button type="button" class="pcfb-close-message">×</button>
+                    <button type="button" class="pcfb-close-message" aria-label="بستن">
+                        <span aria-hidden="true">×</span>
+                    </button>
                 </div>
             `;
             
-            $container.html(messageHTML).slideDown();
+            $container.html(messageHTML).slideDown(300);
             
-            // بستن خودکار پیام‌های موفقیت بعد از 5 ثانیه
+            // بستن خودکار پیام‌های موفقیت
             if (type === 'success') {
                 setTimeout(() => {
-                    $container.slideUp();
+                    $container.slideUp(300, () => $container.empty());
                 }, 5000);
             }
-        },
+        }
 
-        // پاک کردن پیام‌ها
-        clearMessages: function($container) {
-            $container.slideUp().empty();
-        },
+        /**
+         * ==================== توابع اعتبارسنجی پیشرفته ====================
+         */
 
-        // نمایش خطای فیلد
-        showFieldError: function($field, message) {
-            const $fieldWrapper = $field.closest('.pcfb-field-frontend');
-            $fieldWrapper.addClass('pcfb-field-error');
+        validateNumberField($field, value) {
+            const numValue = parseFloat(value);
+            const min = $field.attr('min');
+            const max = $field.attr('max');
+            const step = $field.attr('step');
             
-            let $errorMessage = $fieldWrapper.find('.pcfb-field-error-message');
-            if ($errorMessage.length === 0) {
-                $errorMessage = $(`<span class="pcfb-field-error-message">${message}</span>`);
-                $fieldWrapper.append($errorMessage);
-            } else {
-                $errorMessage.text(message);
+            if (isNaN(numValue)) {
+                return { isValid: false, error: 'لطفاً یک عدد معتبر وارد کنید' };
             }
-        },
-
-        // حذف خطای فیلد
-        removeFieldError: function($field) {
-            const $fieldWrapper = $field.closest('.pcfb-field-frontend');
-            $fieldWrapper.removeClass('pcfb-field-error');
-            $fieldWrapper.find('.pcfb-field-error-message').remove();
-        },
-
-        // هایلایت فیلدهای نامعتبر
-        highlightInvalidFields: function(invalidFields) {
-            invalidFields.forEach($field => {
-                this.showFieldError($field, 'این فیلد نیاز به توجه دارد.');
-            });
-        },
-
-        // حذف تمام خطاهای فیلدها
-        removeFieldErrors: function($form) {
-            $form.find('.pcfb-field-frontend').removeClass('pcfb-field-error');
-            $form.find('.pcfb-field-error-message').remove();
-        },
-
-        // پاک کردن فرم پس از ارسال موفق
-        clearForm: function($form) {
-            $form[0].reset();
-            this.removeFieldErrors($form);
-        },
-
-        // تغییر وضعیت دکمه ارسال
-        setButtonState: function($button, state) {
-            const $btnText = $button.find('.btn-text');
-            const $btnLoading = $button.find('.btn-loading');
             
-            if (state === 'loading') {
-                $button.prop('disabled', true);
-                $btnText.hide();
-                $btnLoading.show();
-            } else {
-                $button.prop('disabled', false);
-                $btnText.show();
-                $btnLoading.hide();
+            if (min && numValue < parseFloat(min)) {
+                return { isValid: false, error: `عدد باید بزرگتر یا برابر ${min} باشد` };
             }
-        },
+            
+            if (max && numValue > parseFloat(max)) {
+                return { isValid: false, error: `عدد باید کوچکتر یا برابر ${max} باشد` };
+            }
+            
+            if (step && step !== 'any') {
+                const stepValue = parseFloat(step);
+                if ((numValue / stepValue) % 1 !== 0) {
+                    return { isValid: false, error: `عدد باید مضرب ${step} باشد` };
+                }
+            }
+            
+            return { isValid: true };
+        }
 
-        // توابع کمکی برای اعتبارسنجی
-        isValidEmail: function(email) {
+        async validateFileField($field) {
+            const errors = [];
+            const files = $field[0].files;
+            const maxSize = $field.data('max-size') || pcfb_public.settings.max_file_size;
+            const allowedTypes = $field.data('allowed-types') || pcfb_public.settings.allowed_file_types;
+            
+            if (files.length === 0 && $field.prop('required')) {
+                errors.push('انتخاب فایل اجباری است');
+                return { isValid: false, errors };
+            }
+            
+            for (let file of files) {
+                // بررسی حجم فایل
+                if (file.size > maxSize) {
+                    const maxSizeMB = (maxSize / 1024 / 1024).toFixed(1);
+                    errors.push(`حجم فایل "${file.name}" بسیار بزرگ است (حداکثر: ${maxSizeMB}MB)`);
+                }
+                
+                // بررسی نوع فایل
+                if (allowedTypes && !allowedTypes.includes(file.type)) {
+                    errors.push(`نوع فایل "${file.name}" مجاز نیست`);
+                }
+            }
+            
+            return {
+                isValid: errors.length === 0,
+                errors: errors
+            };
+        }
+
+        validateFieldLength($field, value) {
+            const minLength = $field.attr('minlength');
+            const maxLength = $field.attr('maxlength');
+            
+            if (minLength && value.length < parseInt(minLength)) {
+                return {
+                    isValid: false,
+                    error: `متن باید حداقل ${minLength} کاراکتر باشد`
+                };
+            }
+            
+            if (maxLength && value.length > parseInt(maxLength)) {
+                return {
+                    isValid: false,
+                    error: `متن نباید بیشتر از ${maxLength} کاراکتر باشد`
+                };
+            }
+            
+            return { isValid: true };
+        }
+
+        validateFieldPattern($field, value) {
+            const pattern = $field.attr('pattern');
+            if (!pattern) return { isValid: true };
+            
+            const regex = new RegExp(pattern);
+            if (!regex.test(value)) {
+                return {
+                    isValid: false,
+                    error: 'قالب وارد شده معتبر نیست'
+                };
+            }
+            
+            return { isValid: true };
+        }
+
+        /**
+         * ==================== توابع کمکی ====================
+         */
+
+        isValidEmail(email) {
             const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
             return emailRegex.test(email);
-        },
-
-        isValidNumber: function(number) {
-            return !isNaN(parseFloat(number)) && isFinite(number);
         }
-    };
 
-    // راه‌اندازی سیستم frontend
-    PCFB_Frontend.init();
+        isValidPhoneNumber(phone) {
+            const phoneRegex = /^[\+]?[0-9\s\-\(\)]{10,}$/;
+            return phoneRegex.test(phone.replace(/\s/g, ''));
+        }
 
-    // در دسترس قرار دادن global
-    window.PCFB_Frontend = PCFB_Frontend;
-});
+        isValidUrl(url) {
+            try {
+                new URL(url);
+                return true;
+            } catch {
+                return false;
+            }
+        }
+
+        isValidDate(dateString) {
+            return !isNaN(Date.parse(dateString));
+        }
+
+        scrollToFirstError($form) {
+            const $firstError = $form.find('.pcfb-field-error').first();
+            if ($firstError.length) {
+                this.scrollToElement($firstError);
+            }
+        }
+
+        scrollToElement($element) {
+            $('html, body').animate({
+                scrollTop: $element.offset().top - 100
+            }, 500);
+        }
+
+        setButtonState($button, state) {
+            const states = {
+                loading: { disabled: true, text: 'در حال ارسال...', showLoading: true },
+                normal: { disabled: false, text: 'ارسال فرم', showLoading: false }
+            };
+            
+            const config = states[state];
+            $button.prop('disabled', config.disabled);
+            $button.find('.btn-text').text(config.text);
+            $button.find('.btn-loading').toggle(config.showLoading);
+        }
+
+        // سایر توابع مدیریت UI...
+    }
+
+    // راه‌اندازی هنگام بارگذاری صفحه
+    $(document).ready(() => {
+        window.PCFBFrontend = new PCFBFrontend();
+    });
+
+})(jQuery);

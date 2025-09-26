@@ -1,256 +1,271 @@
 <?php
-if ( ! defined( 'ABSPATH' ) ) exit;
+/**
+ * کلاس مدیریت دیتابیس - نسخه بهینه‌سازی شده
+ */
+
+if (!defined('ABSPATH')) {
+    exit;
+}
 
 class PCFB_DB {
-    private static $table = 'pcfb_forms';
-<<<<<<< HEAD
-    private static $submissions_table = 'pcfb_submissions';
+    private static $table_forms = 'pcfb_forms';
+    private static $table_submissions = 'pcfb_submissions';
 
-    public static function create_table() {
+    /**
+     * ایجاد جداول دیتابیس با مدیریت خطا
+     */
+    public static function create_tables() {
         global $wpdb;
+        
+        require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
+        
+        // بررسی وجود تابع dbDelta
+        if (!function_exists('dbDelta')) {
+            error_log('PCFB Error: dbDelta function not available');
+            return false;
+        }
         
         $charset_collate = $wpdb->get_charset_collate();
         
-        // جدول فرم‌ها
-        $forms_table = $wpdb->prefix . self::$table;
-        $forms_sql = "CREATE TABLE $forms_table (
-=======
+        try {
+            // جدول فرم‌ها
+            $forms_table = $wpdb->prefix . self::$table_forms;
+            $forms_sql = "CREATE TABLE $forms_table (
+                id mediumint(9) NOT NULL AUTO_INCREMENT,
+                form_name varchar(200) NOT NULL,
+                form_slug varchar(100) NOT NULL,
+                form_json longtext NOT NULL,
+                settings longtext DEFAULT NULL,
+                created_at datetime DEFAULT CURRENT_TIMESTAMP NOT NULL,
+                updated_at datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP NOT NULL,
+                status tinyint(1) DEFAULT 1 NOT NULL,
+                PRIMARY KEY (id),
+                UNIQUE KEY form_slug (form_slug),
+                KEY status (status),
+                KEY created_at (created_at)
+            ) $charset_collate;";
 
-    public static function create_table() {
-        global $wpdb;
-        $table_name = $wpdb->prefix . self::$table;
-        $charset_collate = $wpdb->get_charset_collate();
+            // جدول ارسال‌ها
+            $submissions_table = $wpdb->prefix . self::$table_submissions;
+            $submissions_sql = "CREATE TABLE $submissions_table (
+                id mediumint(9) NOT NULL AUTO_INCREMENT,
+                form_id mediumint(9) NOT NULL,
+                form_data longtext NOT NULL,
+                ip_address varchar(45) DEFAULT '',
+                user_agent text DEFAULT '',
+                user_id bigint(20) DEFAULT 0,
+                status varchar(20) DEFAULT 'pending',
+                created_at datetime DEFAULT CURRENT_TIMESTAMP NOT NULL,
+                updated_at datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP NOT NULL,
+                PRIMARY KEY (id),
+                KEY form_id (form_id),
+                KEY status (status),
+                KEY created_at (created_at),
+                KEY user_id (user_id)
+            ) $charset_collate;";
 
-        $sql = "CREATE TABLE $table_name (
->>>>>>> 790f10da24534e457f5891ff27315d2c30e0e07d
-            id mediumint(9) NOT NULL AUTO_INCREMENT,
-            form_name varchar(200) NOT NULL,
-            form_json longtext NOT NULL,
-            created_at datetime DEFAULT CURRENT_TIMESTAMP NOT NULL,
-            updated_at datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP NOT NULL,
-<<<<<<< HEAD
-            status tinyint(1) DEFAULT 1 NOT NULL,
-            PRIMARY KEY  (id),
-            KEY status (status)
-        ) $charset_collate;";
-
-        // جدول ارسال‌ها
-        $submissions_table = $wpdb->prefix . self::$submissions_table;
-        $submissions_sql = "CREATE TABLE $submissions_table (
-            id mediumint(9) NOT NULL AUTO_INCREMENT,
-            form_id mediumint(9) NOT NULL,
-            form_data longtext NOT NULL,
-            ip_address varchar(45) DEFAULT '',
-            user_agent text DEFAULT '',
-            created_at datetime DEFAULT CURRENT_TIMESTAMP NOT NULL,
-            PRIMARY KEY  (id),
-            KEY form_id (form_id),
-            KEY created_at (created_at)
-        ) $charset_collate;";
-
-        require_once( ABSPATH . 'wp-admin/includes/upgrade.php' );
-        dbDelta( $forms_sql );
-        dbDelta( $submissions_sql );
-=======
-            PRIMARY KEY  (id)
-        ) $charset_collate;";
-
-        require_once( ABSPATH . 'wp-admin/includes/upgrade.php' );
-        dbDelta( $sql );
->>>>>>> 790f10da24534e457f5891ff27315d2c30e0e07d
+            // اجرای کوئری‌ها
+            dbDelta($forms_sql);
+            dbDelta($submissions_sql);
+            
+            // بررسی خطاهای احتمالی
+            if (!empty($wpdb->last_error)) {
+                error_log('PCFB Database Error: ' . $wpdb->last_error);
+                return false;
+            }
+            
+            return true;
+            
+        } catch (Exception $e) {
+            error_log('PCFB Database Error: ' . $e->getMessage());
+            return false;
+        }
     }
 
-    public static function insert_form($name, $json) {
+    /**
+     * ذخیره یا به‌روزرسانی فرم
+     */
+    public static function save_form($data) {
         global $wpdb;
-<<<<<<< HEAD
         
-        $name = sanitize_text_field( $name );
-        if ( empty( $name ) ) {
-            return new WP_Error( 'invalid_name', 'نام فرم نمی‌تواند خالی باشد.' );
+        $table_name = $wpdb->prefix . self::$table_forms;
+        
+        // اعتبارسنجی داده‌ها
+        $form_id = isset($data['form_id']) ? absint($data['form_id']) : 0;
+        $form_name = sanitize_text_field($data['form_name'] ?? '');
+        $form_json = wp_unslash($data['form_json'] ?? '');
+        
+        if (empty($form_name)) {
+            return new WP_Error('invalid_name', 'نام فرم نمی‌تواند خالی باشد.');
         }
         
-        if ( ! self::is_valid_json( $json ) ) {
-            return new WP_Error( 'invalid_json', 'داده‌های فرم معتبر نیستند.' );
+        if (empty($form_json)) {
+            return new WP_Error('invalid_json', 'داده‌های فرم نمی‌تواند خالی باشد.');
         }
         
-        $table_name = $wpdb->prefix . self::$table;
-        
-        $result = $wpdb->insert(
-            $table_name,
-            [
-                'form_name' => $name,
-                'form_json' => $json
-            ],
-            [ '%s', '%s' ]
-        );
-        
-        if ( false === $result ) {
-            return new WP_Error( 'db_error', $wpdb->last_error );
+        // ایجاد slug خودکار
+        $form_slug = sanitize_title($form_name);
+        if (empty($form_slug)) {
+            $form_slug = 'form-' . uniqid();
         }
         
-        return $wpdb->insert_id;
+        // آماده‌سازی داده‌ها
+        $form_data = [
+            'form_name' => $form_name,
+            'form_slug' => $form_slug,
+            'form_json' => $form_json,
+            'settings' => isset($data['settings']) ? wp_json_encode($data['settings']) : '{}',
+            'updated_at' => current_time('mysql')
+        ];
+        
+        if ($form_id > 0) {
+            // به‌روزرسانی فرم موجود
+            $result = $wpdb->update(
+                $table_name,
+                $form_data,
+                ['id' => $form_id],
+                ['%s', '%s', '%s', '%s', '%s'],
+                ['%d']
+            );
+            
+            return $result !== false ? $form_id : false;
+        } else {
+            // ایجاد فرم جدید
+            $form_data['created_at'] = current_time('mysql');
+            $form_data['status'] = 1;
+            
+            $result = $wpdb->insert(
+                $table_name,
+                $form_data,
+                ['%s', '%s', '%s', '%s', '%s', '%d']
+            );
+            
+            return $result ? $wpdb->insert_id : false;
+        }
     }
 
-    public static function update_form($id, $name, $json) {
+    /**
+     * دریافت لیست فرم‌ها
+     */
+    public static function get_forms($args = []) {
         global $wpdb;
+        $table_name = $wpdb->prefix . self::$table_forms;
         
-        $id = absint( $id );
-        $name = sanitize_text_field( $name );
+        $defaults = [
+            'status' => 1,
+            'orderby' => 'id',
+            'order' => 'DESC',
+            'limit' => 0,
+            'offset' => 0
+        ];
         
-        if ( empty( $name ) ) {
-            return new WP_Error( 'invalid_name', 'نام فرم نمی‌تواند خالی باشد.' );
-        }
+        $args = wp_parse_args($args, $defaults);
         
-        if ( ! self::is_valid_json( $json ) ) {
-            return new WP_Error( 'invalid_json', 'داده‌های فرم معتبر نیستند.' );
-        }
-        
-        $table_name = $wpdb->prefix . self::$table;
-        
-        $result = $wpdb->update(
-            $table_name,
-            [
-                'form_name' => $name,
-                'form_json' => $json
-            ],
-            [ 'id' => $id ],
-            [ '%s', '%s' ],
-            [ '%d' ]
-        );
-        
-        if ( false === $result ) {
-            return new WP_Error( 'db_error', $wpdb->last_error );
-        }
-        
-        return $result;
-    }
-
-    public static function delete_form($id) {
-        global $wpdb;
-        
-        $id = absint( $id );
-        $table_name = $wpdb->prefix . self::$table;
-        
-        // حذف نرم (soft delete)
-        $result = $wpdb->update(
-            $table_name,
-            [ 'status' => 0 ],
-            [ 'id' => $id ],
-            [ '%d' ],
-            [ '%d' ]
-        );
-        
-        if ( false === $result ) {
-            return new WP_Error( 'db_error', $wpdb->last_error );
-        }
-        
-        return $result;
-    }
-
-    public static function get_forms($active_only = true) {
-        global $wpdb;
-        $table_name = $wpdb->prefix . self::$table;
-        
-        $where = $active_only ? " WHERE status = 1" : "";
-        $query = "SELECT * FROM $table_name{$where} ORDER BY id DESC";
-        
-        return $wpdb->get_results( $query );
-=======
-        $table_name = $wpdb->prefix . self::$table;
-        $wpdb->insert($table_name, [
-            'form_name' => $name,
-            'form_json' => $json
-        ]);
-        return $wpdb->insert_id;
-    }
-
-    public static function get_forms() {
-        global $wpdb;
-        $table_name = $wpdb->prefix . self::$table;
-        return $wpdb->get_results("SELECT * FROM $table_name ORDER BY id DESC");
->>>>>>> 790f10da24534e457f5891ff27315d2c30e0e07d
-    }
-
-    public static function get_form($id) {
-        global $wpdb;
-        $table_name = $wpdb->prefix . self::$table;
-<<<<<<< HEAD
-        
-        return $wpdb->get_row( 
-            $wpdb->prepare( "SELECT * FROM $table_name WHERE id = %d", $id ) 
-        );
-    }
-
-    public static function insert_submission($form_id, $form_data) {
-        global $wpdb;
-        
-        $form_id = absint( $form_id );
-        $table_name = $wpdb->prefix . self::$submissions_table;
-        
-        $result = $wpdb->insert(
-            $table_name,
-            [
-                'form_id' => $form_id,
-                'form_data' => wp_json_encode( $form_data ),
-                'ip_address' => self::get_client_ip(),
-                'user_agent' => isset( $_SERVER['HTTP_USER_AGENT'] ) ? substr( $_SERVER['HTTP_USER_AGENT'], 0, 254 ) : ''
-            ],
-            [ '%d', '%s', '%s', '%s' ]
-        );
-        
-        if ( false === $result ) {
-            return new WP_Error( 'db_error', $wpdb->last_error );
-        }
-        
-        return $wpdb->insert_id;
-    }
-
-    public static function get_submissions($form_id = null) {
-        global $wpdb;
-        $table_name = $wpdb->prefix . self::$submissions_table;
-        
-        $where = '';
+        $where = [];
         $prepare_args = [];
         
-        if ( $form_id ) {
-            $where = " WHERE form_id = %d";
-            $prepare_args[] = $form_id;
+        if ($args['status'] !== null) {
+            $where[] = 'status = %d';
+            $prepare_args[] = $args['status'];
         }
         
-        $query = "SELECT * FROM $table_name{$where} ORDER BY created_at DESC";
+        $where_sql = !empty($where) ? 'WHERE ' . implode(' AND ', $where) : '';
+        $order_sql = "ORDER BY {$args['orderby']} {$args['order']}";
         
-        if ( ! empty( $prepare_args ) ) {
-            $query = $wpdb->prepare( $query, $prepare_args );
+        $limit_sql = '';
+        if ($args['limit'] > 0) {
+            $limit_sql = "LIMIT %d";
+            $prepare_args[] = $args['limit'];
+            
+            if ($args['offset'] > 0) {
+                $limit_sql .= " OFFSET %d";
+                $prepare_args[] = $args['offset'];
+            }
         }
         
-        return $wpdb->get_results( $query );
+        $query = "SELECT * FROM {$table_name} {$where_sql} {$order_sql} {$limit_sql}";
+        
+        if (!empty($prepare_args)) {
+            $query = $wpdb->prepare($query, $prepare_args);
+        }
+        
+        return $wpdb->get_results($query);
     }
 
-    private static function is_valid_json($data) {
-        if ( is_string( $data ) ) {
-            json_decode( $data );
-            return ( json_last_error() === JSON_ERROR_NONE );
-        }
-        
-        return true;
-    }
+    // بعد از متد get_forms() این متدها را اضافه کنید:
 
-    private static function get_client_ip() {
-        $ip = '';
-        
-        if ( ! empty( $_SERVER['HTTP_CLIENT_IP'] ) ) {
-            $ip = $_SERVER['HTTP_CLIENT_IP'];
-        } elseif ( ! empty( $_SERVER['HTTP_X_FORWARDED_FOR'] ) ) {
-            $ip = $_SERVER['HTTP_X_FORWARDED_FOR'];
-        } else {
-            $ip = $_SERVER['REMOTE_ADDR'] ?? '';
-        }
-        
-        return sanitize_text_field( $ip );
-    }
+/**
+ * دریافت یک فرم خاص
+ */
+public static function get_form($form_id) {
+    global $wpdb;
+    $table_name = $wpdb->prefix . self::$table_forms;
+    
+    return $wpdb->get_row(
+        $wpdb->prepare("SELECT * FROM {$table_name} WHERE id = %d", $form_id)
+    );
 }
-=======
-        return $wpdb->get_row($wpdb->prepare("SELECT * FROM $table_name WHERE id = %d", $id));
-    }
+
+/**
+ * حذف فرم (نرم)
+ */
+public static function delete_form($form_id) {
+    global $wpdb;
+    $table_name = $wpdb->prefix . self::$table_forms;
+    
+    return $wpdb->update(
+        $table_name,
+        ['status' => 0, 'updated_at' => current_time('mysql')],
+        ['id' => $form_id],
+        ['%d', '%s'],
+        ['%d']
+    );
 }
->>>>>>> 790f10da24534e457f5891ff27315d2c30e0e07d
+
+/**
+ * دریافت ارسال‌های یک فرم
+ */
+public static function get_submissions($form_id = null) {
+    global $wpdb;
+    $table_name = $wpdb->prefix . self::$table_submissions;
+    
+    if ($form_id) {
+        return $wpdb->get_results(
+            $wpdb->prepare(
+                "SELECT * FROM {$table_name} WHERE form_id = %d ORDER BY created_at DESC",
+                $form_id
+            )
+        );
+    }
+    
+    return $wpdb->get_results("SELECT * FROM {$table_name} ORDER BY created_at DESC");
+}
+
+/**
+ * حذف یک ارسال
+ */
+public static function delete_submission($submission_id) {
+    global $wpdb;
+    $table_name = $wpdb->prefix . self::$table_submissions;
+    
+    return $wpdb->delete(
+        $table_name,
+        ['id' => $submission_id],
+        ['%d']
+    );
+}
+
+/**
+ * حذف تمام ارسال‌های یک فرم
+ */
+public static function delete_form_submissions($form_id) {
+    global $wpdb;
+    $table_name = $wpdb->prefix . self::$table_submissions;
+    
+    return $wpdb->delete(
+        $table_name,
+        ['form_id' => $form_id],
+        ['%d']
+    );
+}
+}

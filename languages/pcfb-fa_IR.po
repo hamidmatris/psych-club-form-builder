@@ -1,0 +1,17 @@
+# Psych Club Form Builder - Persian Translation
+msgid ""
+msgstr ""
+"Project-Id-Version: Psych Club Form Builder\n"
+"Language: fa_IR\n"
+
+msgid "Form Builder"
+msgstr "فرم‌ساز"
+
+msgid "Form Name"
+msgstr "نام فرم"
+
+msgid "Submit"
+msgstr "ارسال"
+
+msgid "This field is required"
+msgstr "این فیلد اجباری است"
