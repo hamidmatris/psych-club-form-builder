@@ -1,5 +1,4 @@
-📋 ویژگی‌های اصلی:
-
+📋 ساختار افزونه:
 psych-club-form-builder/
 │
 ├── psych-club-form-builder.php
@@ -20,7 +19,6 @@ psych-club-form-builder/
 │   ├── class-pcfb-db.php
 │   └── class-pcfb-ajax.php
 └── README.txt
-
 🌟 ویژگی‌های اصلی:
 
     ✅ فرم‌ساز بصری (Drag & Drop)
@@ -99,4 +97,5 @@ psych-club-form-builder/
 
 
     کاربرپسند است
+
 
