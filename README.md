@@ -1,4 +1,5 @@
-ساختار افزونه"
+📋 ویژگی‌های اصلی:
+
 psych-club-form-builder/
 │
 ├── psych-club-form-builder.php
@@ -98,3 +99,4 @@ psych-club-form-builder/
 
 
     کاربرپسند است
+
